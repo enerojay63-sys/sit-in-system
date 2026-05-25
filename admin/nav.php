@@ -17,6 +17,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </a>
     <a href="sitin_records.php"     <?= $current_page==='sitin_records.php'   ?'class="active"':'' ?>><i class="fas fa-list"></i> Records</a>
     <a href="sitin_reports.php"     <?= $current_page==='sitin_reports.php'   ?'class="active"':'' ?>><i class="fas fa-chart-bar"></i> Reports</a>
+    <a href="generate_report.php"   <?= $current_page==='generate_report.php' ?'class="active"':'' ?>><i class="fas fa-file-alt"></i> Generate</a>
     <a href="feedback_reports.php"  <?= $current_page==='feedback_reports.php'?'class="active"':'' ?> style="position:relative">
       <i class="fas fa-comments"></i> Feedback
       <?php if($nav_feedback_count>0): ?><span class="nav-badge nav-badge-red"><?=$nav_feedback_count?></span><?php endif; ?>

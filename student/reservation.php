@@ -2,11 +2,32 @@
 require_once '../includes/config.php';
 require_once '../includes/auth.php';
 requireStudent();
+
 $s = $_SESSION['student_data'];
+$stmt = $conn->prepare("SELECT * FROM students WHERE id=?");
+$stmt->bind_param('i',$s['id']); $stmt->execute();
+$s = $stmt->get_result()->fetch_assoc(); $stmt->close();
+$_SESSION['student_data'] = $s;
+
 $error = $success = '';
 
 // Check if reservations are enabled
 $reserv_enabled = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key='reservation_enabled'")->fetch_row()[0] ?? '1';
+
+// Handle cancel reservation
+if (isset($_GET['cancel'])) {
+  $cancel_id = (int)$_GET['cancel'];
+  // Only allow canceling own pending reservations
+  $chk = $conn->prepare("SELECT id FROM reservations WHERE id=? AND student_id=? AND status='pending'");
+  $chk->bind_param('ii', $cancel_id, $s['id']); $chk->execute();
+  if ($chk->get_result()->num_rows > 0) {
+    $conn->query("UPDATE reservations SET status='cancelled' WHERE id=$cancel_id");
+    $success = 'Reservation cancelled successfully.';
+  } else {
+    $error = 'Cannot cancel this reservation.';
+  }
+  $chk->close();
+}
 
 if ($_SERVER['REQUEST_METHOD']==='POST' && $reserv_enabled==='1') {
   $purpose = trim($_POST['purpose']);
@@ -48,6 +69,9 @@ $res->close();
     html.dark table.data-table tbody tr:hover{background:rgba(142,202,230,0.06);}
     html.dark table.data-table tbody tr:nth-child(even){background:rgba(255,255,255,0.03);}
     html.dark footer{background:rgba(5,16,26,0.9);color:rgba(200,208,220,0.5);}
+
+    /* FIX: dark mode table cell labels */
+    html.dark .res-table-label { color: #c8d0dc !important; }
   </style>
 </head>
 <body>
@@ -55,9 +79,13 @@ $res->close();
   <a href="dashboard.php" class="topnav-brand">Dashboard</a>
   <div class="topnav-links">
     <a href="dashboard.php"><i class="fas fa-home"></i> Home</a>
-    <a href="edit_profile.php"><i class="fas fa-user-edit"></i> Profile</a>
+    <a href="sitin_summary.php"><i class="fas fa-chart-bar"></i> Summary</a>
     <a href="history.php"><i class="fas fa-history"></i> History</a>
+    <a href="lab_availability.php"><i class="fas fa-desktop"></i> Labs</a>
     <a href="reservation.php" class="active"><i class="fas fa-calendar-plus"></i> Reservation</a>
+    <a href="leaderboard.php"><i class="fas fa-trophy"></i> Leaderboard</a>
+    <a href="testimonials.php"><i class="fas fa-quote-left"></i> Testimonials</a>
+    <a href="edit_profile.php"><i class="fas fa-user-edit"></i> Profile</a>
     <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode"><i class="fas fa-moon" id="darkIcon"></i></button>
     <a href="logout.php" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
   </div>
@@ -85,13 +113,13 @@ $res->close();
     <div class="card-body">
       <form method="POST">
         <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:8px 0;width:160px;font-size:0.84rem;font-weight:600;color:var(--text-soft)">ID Number:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=htmlspecialchars($s['id_number'])?>" readonly></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Student Name:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=htmlspecialchars(fullName($s))?>" readonly></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Purpose: *</td><td style="padding:8px 0"><input type="text" name="purpose" class="form-control" placeholder="e.g. C Programming" required></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Lab: *</td><td style="padding:8px 0"><input type="text" name="lab" class="form-control" placeholder="e.g. 524" required></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Time In: *</td><td style="padding:8px 0"><input type="time" name="time_in" class="form-control" required></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Date: *</td><td style="padding:8px 0"><input type="date" name="date" class="form-control" required></td></tr>
-          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)">Remaining Session:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=$s['remaining_session']?>" readonly></td></tr>
+          <tr><td style="padding:8px 0;width:160px;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">ID Number:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=htmlspecialchars($s['id_number'])?>" readonly></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Student Name:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=htmlspecialchars(fullName($s))?>" readonly></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Purpose: *</td><td style="padding:8px 0"><input type="text" name="purpose" class="form-control" placeholder="e.g. C Programming" required></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Lab: *</td><td style="padding:8px 0"><input type="text" name="lab" class="form-control" placeholder="e.g. 524" required></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Time In: *</td><td style="padding:8px 0"><input type="time" name="time_in" class="form-control" required></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Date: *</td><td style="padding:8px 0"><input type="date" name="date" class="form-control" required></td></tr>
+          <tr><td style="padding:8px 0;font-size:0.84rem;font-weight:600;color:var(--text-soft)" class="res-table-label">Remaining Session:</td><td style="padding:8px 0"><input type="text" class="form-control" value="<?=$s['remaining_session']?>" readonly></td></tr>
         </table>
         <button type="submit" class="btn btn-primary" style="margin-top:16px"><i class="fas fa-calendar-check"></i> Reserve</button>
       </form>
@@ -105,7 +133,7 @@ $res->close();
     <div class="card-body" style="padding:0">
       <div class="dt-wrapper">
         <table class="data-table">
-          <thead><tr><th>Lab</th><th>Purpose</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+          <thead><tr><th>Lab</th><th>Purpose</th><th>Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
             <?php foreach($reservations as $r): ?>
             <tr>
@@ -113,7 +141,27 @@ $res->close();
               <td><?=htmlspecialchars($r['purpose'])?></td>
               <td><?=htmlspecialchars($r['date'])?></td>
               <td><?=htmlspecialchars($r['time_in'])?></td>
-              <td><span class="badge <?=$r['status']==='approved'?'badge-success':($r['status']==='rejected'?'badge-danger':'badge-warning')?>"><?=ucfirst($r['status'])?></span></td>
+              <td>
+                <?php
+                  // Support 'cancelled' status if column allows it
+                  $badge = 'badge-warning';
+                  if ($r['status'] === 'approved') $badge = 'badge-success';
+                  elseif ($r['status'] === 'rejected') $badge = 'badge-danger';
+                  elseif ($r['status'] === 'cancelled') $badge = 'badge-secondary';
+                ?>
+                <span class="badge <?=$badge?>"><?=ucfirst($r['status'])?></span>
+              </td>
+              <td>
+                <?php if ($r['status'] === 'pending'): ?>
+                <a href="reservation.php?cancel=<?=$r['id']?>"
+                   class="btn btn-danger btn-sm"
+                   onclick="return confirm('Cancel this reservation?')">
+                  <i class="fas fa-times"></i> Cancel
+                </a>
+                <?php else: ?>
+                <span style="font-size:0.75rem;color:var(--text-muted)">—</span>
+                <?php endif; ?>
+              </td>
             </tr>
             <?php endforeach; ?>
           </tbody>

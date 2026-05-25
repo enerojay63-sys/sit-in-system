@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   } else {
     $stmt = $conn->prepare("UPDATE students SET lastname=?,firstname=?,midname=?,course=?,year_level=?,email=?,address=?,profile_pic=? WHERE id=?");
-    $stmt->bind_param('ssssissi',$lastname,$firstname,$midname,$course,$year_level,$email,$address,$pic,$s['id']);
+    $stmt->bind_param('ssssisssi',$lastname,$firstname,$midname,$course,$year_level,$email,$address,$pic,$s['id']);
     $stmt->execute(); $stmt->close(); $success = 'Profile updated!';
   }
   if (!$error) {
@@ -71,20 +71,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <a href="dashboard.php" class="topnav-brand">Dashboard</a>
   <div class="topnav-links">
     <a href="dashboard.php"><i class="fas fa-home"></i> Home</a>
-    <a href="edit_profile.php" class="active"><i class="fas fa-user-edit"></i> Edit Profile</a>
+    <a href="sitin_summary.php"><i class="fas fa-chart-bar"></i> Summary</a>
     <a href="history.php"><i class="fas fa-history"></i> History</a>
+    <a href="lab_availability.php"><i class="fas fa-desktop"></i> Labs</a>
     <a href="reservation.php"><i class="fas fa-calendar-plus"></i> Reservation</a>
+    <a href="leaderboard.php"><i class="fas fa-trophy"></i> Leaderboard</a>
+    <a href="testimonials.php"><i class="fas fa-quote-left"></i> Testimonials</a>
+    <a href="edit_profile.php" class="active"><i class="fas fa-user-edit"></i> Profile</a>
     <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode"><i class="fas fa-moon" id="darkIcon"></i></button>
     <a href="logout.php" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
   </div>
 </nav>
 
 <div class="page-content">
-  <h2 style="margin-bottom:20px;font-size:1.25rem;font-weight:700;color:var(--prussian)"><i class="fas fa-user-edit" style="color:var(--cerulean)"></i> Edit Profile</h2>
-  <?php if($error): ?><div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> <?=htmlspecialchars($error)?></div><?php endif; ?>
-  <?php if($success): ?><div class="alert alert-success"><i class="fas fa-check-circle"></i> <?=htmlspecialchars($success)?></div><?php endif; ?>
+  <h2 style="margin-bottom:20px;font-size:1.25rem;font-weight:700;color:var(--prussian);text-align:center;"><i class="fas fa-user-edit" style="color:var(--cerulean)"></i> Edit Profile</h2>
+  
+  <?php if($error): ?><div class="alert alert-danger" style="max-width:700px; margin: 0 auto 20px auto;"><i class="fas fa-exclamation-circle"></i> <?=htmlspecialchars($error)?></div><?php endif; ?>
+  <?php if($success): ?><div class="alert alert-success" style="max-width:700px; margin: 0 auto 20px auto;"><i class="fas fa-check-circle"></i> <?=htmlspecialchars($success)?></div><?php endif; ?>
 
-  <div class="card" style="max-width:700px">
+  <div class="card" style="max-width:700px; margin: 0 auto;">
     <div class="card-header"><i class="fas fa-user-edit"></i> Edit Your Information</div>
     <div class="card-body">
       <form method="POST" enctype="multipart/form-data">
@@ -109,11 +114,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group"><label>Middle Name</label><input type="text" name="midname" class="form-control" value="<?=htmlspecialchars($s['midname'])?>"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="form-group"><label>Course *</label><select name="course" class="form-control" required><?php foreach(['BSIT','BSCS','BSIS','ACT'] as $c): ?><option value="<?=$c?>" <?=$s['course']===$c?'selected':''?>><?=$c?></option><?php endforeach; ?></select></div>
-              <div class="form-group"><label>Year Level *</label><select name="year_level" class="form-control" required><?php for($y=1;$y<=4;$y++): ?><option value="<?=$y?>" <?=$s['year_level']==$y?'selected':''?>><?=$y?>st/nd/rd/th Year</option><?php endfor; ?></select></div>
+              <div class="form-group"><label>Course *</label>
+                <select name="course" class="form-control" required>
+                  <?php foreach(['BSIT','BSCS','BSIS','ACT'] as $c): ?>
+                  <option value="<?=$c?>" <?=$s['course']===$c?'selected':''?>><?=$c?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="form-group"><label>Year Level *</label>
+                <!-- FIX: Correct year level options with proper labels -->
+                <select name="year_level" class="form-control" required>
+                  <option value="1" <?=(int)$s['year_level']===1?'selected':''?>>1st Year</option>
+                  <option value="2" <?=(int)$s['year_level']===2?'selected':''?>>2nd Year</option>
+                  <option value="3" <?=(int)$s['year_level']===3?'selected':''?>>3rd Year</option>
+                  <option value="4" <?=(int)$s['year_level']===4?'selected':''?>>4th Year</option>
+                </select>
+              </div>
             </div>
             <div class="form-group"><label>Email *</label><input type="email" name="email" class="form-control" value="<?=htmlspecialchars($s['email'])?>" required></div>
-            <div class="form-group"><label>Address</label><input type="text" name="address" class="form-control" value="<?=htmlspecialchars($s['address'])?>"></div>
+            <div class="form-group"><label>Address</label><input type="text" name="address" class="form-control" value="<?=htmlspecialchars($s['address'] ?? '')?>"></div>
             <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
             <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px">Leave blank to keep current password</p>
             <div class="form-group"><label>New Password</label><input type="password" name="new_password" class="form-control" placeholder="New password (min. 6 chars)"></div>

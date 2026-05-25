@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   FOREIGN KEY (sitin_id)   REFERENCES sitin_records(id) ON DELETE CASCADE
 );
 
--- Testimonials
+-- Testimonials (Updated for management system compatibility)
 CREATE TABLE IF NOT EXISTS testimonials (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   student_id INT NOT NULL,

@@ -49,7 +49,6 @@
   --radius:     12px;
   --radius-sm:  7px;
 
-  /* Dark mode overrides */
   --dm-bg:      #0f1117;
   --dm-surface: #1a1d27;
   --dm-border:  #2b2d42;
@@ -95,6 +94,12 @@ html.dark .page-wrapper { background: transparent; }
 html.dark .testimonial-card { background: #1e2130; border-color: var(--border); }
 html.dark .progress { background: #2b2d42; }
 
+/* FIX: Dark mode form labels in student reservation/edit pages */
+html.dark table td[style*="font-weight:600"],
+html.dark table td[style*="font-weight: 600"] {
+  color: #c8d0dc !important;
+}
+
 /* ─── BODY ─── */
 body {
   font-family: 'Roboto', 'Inter', sans-serif;
@@ -127,6 +132,7 @@ body {
   text-decoration: none;
   white-space: nowrap;
   letter-spacing: 0.2px;
+  flex-shrink: 0;
 }
 .topnav-links {
   display: flex;
@@ -134,6 +140,7 @@ body {
   gap: 2px;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: visible; /* FIX: allow dropdowns to show above content */
 }
 .topnav-links a {
   color: rgba(255,255,255,0.82);
@@ -179,7 +186,7 @@ body {
 .nav-badge-red  { background: var(--red); color: #fff; }
 .nav-badge-gold { background: var(--honey); color: var(--prussian); }
 
-/* Dark mode toggle in nav */
+/* Dark mode toggle */
 .dark-toggle {
   background: none;
   border: 1.5px solid rgba(255,255,255,0.3);
@@ -190,21 +197,24 @@ body {
   font-size: 0.78rem;
   display: flex; align-items: center; gap: 4px;
   transition: all 0.18s;
+  white-space: nowrap;
 }
 .dark-toggle:hover { background: rgba(142,202,230,0.18); border-color: var(--sky); color: var(--sky); }
 
-/* Dropdown */
+/* FIX: Dropdown - always on top, never behind content */
 .nav-dropdown { position: relative; }
 .nav-dropdown:hover .nav-dropdown-menu { display: block; }
 .nav-dropdown-menu {
   display: none;
-  position: absolute; top: calc(100% + 6px); right: 0;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   min-width: 175px;
   box-shadow: var(--shadow-lg);
-  z-index: 300;
+  z-index: 2000; /* FIX: high z-index so it's never behind page content */
   overflow: hidden;
 }
 .nav-dropdown-menu a {
@@ -260,7 +270,6 @@ body {
 .card-header.orange { background: linear-gradient(135deg, #6b3a00, var(--orange)); border-bottom-color: var(--honey); }
 .card-body { padding: 20px; }
 
-/* mt / mb helpers */
 .mt-1 { margin-top: 12px; }
 .mt-2 { margin-top: 20px; }
 .mb-1 { margin-bottom: 12px; }
@@ -273,7 +282,7 @@ body {
 .align-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 
-/* ─── STAT CARDS (new dashboard) ─── */
+/* ─── STAT CARDS ─── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -308,7 +317,7 @@ body {
 html.dark .stat-card .stat-value { color: var(--text); }
 .stat-card .stat-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
 
-/* ─── STAT BOXES (old style, kept for compatibility) ─── */
+/* ─── STAT BOXES ─── */
 .stat-boxes {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -383,6 +392,7 @@ html.dark .stat-value { color: var(--text); }
 /* ─── FORMS ─── */
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
+html.dark .form-group label { color: #c8d0dc; }
 .form-control {
   width: 100%;
   border: 1.5px solid var(--border);
@@ -555,6 +565,7 @@ table tbody td, table.data-table tbody td { padding: 11px 14px; vertical-align: 
 .badge-warning   { background: #fff8e1; color: #6b3a00; }
 .badge-info      { background: #e0f2fe; color: var(--prussian); }
 .badge-secondary { background: #f1f5f9; color: var(--text-soft); }
+.badge-gold      { background: #fff8e1; color: #6b3a00; }
 
 /* ─── PROGRESS BAR ─── */
 .progress {
@@ -744,6 +755,18 @@ html.dark .pc-num { color: var(--text); }
 .software-name { font-weight: 700; font-size: 0.88rem; color: var(--prussian); }
 html.dark .software-name { color: var(--text); }
 .software-lab  { font-size: 0.74rem; color: var(--text-muted); }
+
+/* ─── SECTION TITLE ─── */
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--prussian);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html.dark .section-title { color: var(--text); }
 
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

@@ -22,28 +22,17 @@ $dist_map = array_column($dist,'cnt','rating');
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Feedback Reports</title>
+  <title>Feedback Reports — CCS Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<nav class="topnav">
-  <a href="dashboard.php" class="topnav-brand">College of Computer Studies Admin</a>
-  <div class="topnav-links">
-    <a href="dashboard.php"><i class="fas fa-home"></i> Home</a>
-    <a href="search.php"><i class="fas fa-search"></i> Search</a>
-    <a href="students.php"><i class="fas fa-users"></i> Students</a>
-    <a href="sitin.php"><i class="fas fa-desktop"></i> Sit-in</a>
-    <a href="sitin_records.php"><i class="fas fa-list"></i> View Sit-in Records</a>
-    <a href="sitin_reports.php"><i class="fas fa-chart-bar"></i> Sit-in Reports</a>
-    <a href="feedback_reports.php" class="active"><i class="fas fa-comments"></i> Feedback Reports</a>
-    <a href="reservation_admin.php"><i class="fas fa-calendar"></i> Reservation</a>
-    <a href="logout.php" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
-  </div>
-</nav>
-<div class="page-content">
-  <h2 class="page-title">Feedback Reports</h2>
+<?php include 'nav.php'; ?>
+
+<div class="page-wrapper">
+  <div class="section-title"><i class="fas fa-comments"></i> Feedback Reports</div>
+  
   <div class="stats-row" style="margin-bottom:22px;">
     <div class="stat-box">
       <div class="stat-icon"><i class="fas fa-comments"></i></div>
@@ -123,6 +112,12 @@ function renderTable(){
 }
 function goPage(p){page=p;renderTable();}
 renderTable();
+
+// Syncing global theme layout class rule
+(function(){ 
+  const t = localStorage.getItem('theme') || 'light'; 
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
 </script>
 </body>
 </html>

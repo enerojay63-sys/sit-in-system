@@ -3,18 +3,36 @@ require_once '../includes/config.php';
 require_once '../includes/auth.php';
 requireAdmin();
 
-$results      = [];
-$searched     = false;
-$sitin_student = null;
+// Initialize or pull the search parameter history array context
+if (!isset($_SESSION['search_history'])) {
+  $_SESSION['search_history'] = [];
+}
 
-if (isset($_POST['search'])) {
+$results       = [];
+$searched      = false;
+$sitin_student = null;
+$search_query_val = '';
+
+// Check if a search processing loop runs via standard Form execution or historical query click
+if (isset($_POST['search']) || isset($_GET['history_q'])) {
   $searched = true;
-  $q    = '%'.trim($_POST['q']).'%';
-  $stmt = $conn->prepare("SELECT * FROM students WHERE id_number LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?");
-  $stmt->bind_param('ssss', $q, $q, $q, $q);
-  $stmt->execute();
-  $results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-  $stmt->close();
+  $search_query_val = trim($_POST['q'] ?? $_GET['history_q'] ?? '');
+  
+  if ($search_query_val !== '') {
+    // FIXED: Save search keyword history, eliminate duplicates, and cap at most recent 5 records
+    if (($history_key = array_search($search_query_val, $_SESSION['search_history'])) !== false) {
+      unset($_SESSION['search_history'][$history_key]);
+    }
+    array_unshift($_SESSION['search_history'], $search_query_val);
+    $_SESSION['search_history'] = array_slice($_SESSION['search_history'], 0, 5);
+
+    $q = '%'.$search_query_val.'%';
+    $stmt = $conn->prepare("SELECT * FROM students WHERE id_number LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?");
+    $stmt->bind_param('ssss', $q, $q, $q, $q);
+    $stmt->execute();
+    $results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+  }
 }
 
 if (isset($_GET['sitin_id'])) {
@@ -38,62 +56,75 @@ if (isset($_GET['sitin_id'])) {
 <body>
 <?php include 'nav.php'; ?>
 <div class="page-wrapper">
-  <div class="section-title"><i class="fas fa-search"></i> Search Student</div>
+  <div class="section-title" style="text-align: center;"><i class="fas fa-search"></i> Search Student</div>
 
-  <div class="card mb-2" style="max-width:640px;">
+  <div class="card mb-2" style="max-width:640px; margin: 0 auto 20px auto;">
     <div class="card-header"><i class="fas fa-search"></i> Find Student</div>
     <div class="card-body">
       <form method="POST" style="display:flex;gap:10px;">
         <input type="text" name="q" class="form-control"
                placeholder="Search by ID Number, name, or email..."
-               value="<?= htmlspecialchars($_POST['q'] ?? '') ?>"
+               value="<?= htmlspecialchars($search_query_val) ?>"
                required autofocus>
         <button type="submit" name="search" class="btn btn-primary" style="white-space:nowrap;">
           <i class="fas fa-search"></i> Search
         </button>
       </form>
+
+      <?php if(!empty($_SESSION['search_history'])): ?>
+        <div style="margin-top: 12px; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-weight: 500;"><i class="fas fa-clock-rotate-left" style="opacity: 0.7;"></i> Previous Searches:</span>
+          <?php foreach($_SESSION['search_history'] as $prev_item): ?>
+            <a href="search.php?history_q=<?= urlencode($prev_item) ?>" style="background: rgba(var(--cerulean-rgb, 33, 158, 188), 0.1); color: var(--cerulean, #219ebc); padding: 3px 10px; border-radius: 12px; text-decoration: none; font-weight: 500; font-size: 0.75rem; border: 1px solid rgba(33, 158, 188, 0.15); transition: all 0.2s;">
+              <?= htmlspecialchars($prev_item) ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
 
   <?php if ($searched && !$sitin_student): ?>
-  <div class="card mb-2">
+  <div class="card mb-2" style="max-width: 900px; margin: 0 auto;">
     <div class="card-header">
       <i class="fas fa-users"></i> Results
       <span style="margin-left:8px;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;font-size:0.78rem;"><?= count($results) ?> found</span>
     </div>
     <div class="card-body" style="padding:0;">
       <?php if (!$results): ?>
-        <p class="no-data"><i class="fas fa-search" style="font-size:2rem;display:block;margin-bottom:10px;opacity:0.25;"></i>No students found.</p>
+        <p class="no-data" style="padding: 30px 0;"><i class="fas fa-search" style="font-size:2rem;display:block;margin-bottom:10px;opacity:0.25;"></i>No students found.</p>
       <?php else: ?>
-      <table class="data-table">
-        <thead><tr><th>ID Number</th><th>Name</th><th>Course</th><th>Year</th><th>Email</th><th>Session</th><th>Actions</th></tr></thead>
-        <tbody>
-          <?php foreach ($results as $r): ?>
-          <tr>
-            <td><strong><?= htmlspecialchars($r['id_number']) ?></strong></td>
-            <td><?= htmlspecialchars(fullName($r)) ?></td>
-            <td><?= htmlspecialchars($r['course']) ?></td>
-            <td><?= $r['year_level'] ?></td>
-            <td style="font-size:0.78rem;"><?= htmlspecialchars($r['email']) ?></td>
-            <td><span class="badge <?= $r['remaining_session'] <= 5 ? 'badge-danger' : 'badge-success' ?>"><?= $r['remaining_session'] ?></span></td>
-            <td style="white-space:nowrap;">
-              <a href="search.php?sitin_id=<?= $r['id'] ?>" class="btn btn-success btn-sm"><i class="fas fa-desktop"></i> Sit-in</a>
-              <a href="students.php?edit=<?= $r['id'] ?>" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>
-            </td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+      <div class="dt-wrapper">
+        <table class="data-table">
+          <thead><tr><th>ID Number</th><th>Name</th><th>Course</th><th>Year</th><th>Email</th><th>Session</th><th>Actions</th></tr></thead>
+          <tbody>
+            <?php foreach ($results as $r): ?>
+            <tr>
+              <td><strong><?= htmlspecialchars($r['id_number']) ?></strong></td>
+              <td><?= htmlspecialchars(fullName($r)) ?></td>
+              <td><?= htmlspecialchars($r['course']) ?></td>
+              <td><?= $r['year_level'] ?></td>
+              <td style="font-size:0.78rem;"><?= htmlspecialchars($r['email']) ?></td>
+              <td><span class="badge <?= $r['remaining_session'] <= 5 ? 'badge-danger' : 'badge-success' ?>"><?= $r['remaining_session'] ?></span></td>
+              <td style="white-space:nowrap;">
+                <a href="search.php?sitin_id=<?= $r['id'] ?>" class="btn btn-success btn-sm"><i class="fas fa-desktop"></i> Sit-in</a>
+                <a href="students.php?edit=<?= $r['id'] ?>" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <?php endif; ?>
     </div>
   </div>
   <?php endif; ?>
 
   <?php if ($sitin_student): ?>
-  <div class="card" style="max-width:560px;">
+  <div class="card" style="max-width:560px; margin: 0 auto;">
     <div class="card-header green">
       <i class="fas fa-desktop"></i> Sit In Form
-      <a href="search.php" class="modal-close" style="margin-left:auto;font-size:1rem;"><i class="fas fa-arrow-left"></i> Back</a>
+      <a href="search.php" class="modal-close" style="margin-left:auto;font-size:1rem; color:#fff; text-decoration:none;"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
     <div class="card-body">
       <div style="background:var(--alice);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:18px;display:flex;gap:20px;flex-wrap:wrap;">
@@ -153,5 +184,11 @@ if (isset($_GET['sitin_id'])) {
   </div>
   <?php endif; ?>
 </div>
+<script>
+(function(){ 
+  const t = localStorage.getItem('theme') || 'light'; 
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
 </body>
 </html>
